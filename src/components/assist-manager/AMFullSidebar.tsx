@@ -23,8 +23,8 @@ import {
   Brain,
   AlertOctagon,
   Settings,
+  ShieldCheck,
 } from 'lucide-react';
-import assistManagerLogo from '@/assets/assist-manager-logo.jpg';
 
 export type AMSection =
   | 'assist_dashboard'
@@ -46,6 +46,7 @@ export type AMSection =
 interface AMFullSidebarProps {
   activeSection: AMSection;
   onSectionChange: (section: AMSection) => void;
+  counts?: Partial<Record<AMSection, number>>;
 }
 
 const SIDEBAR_ITEMS: { id: AMSection; label: string; icon: React.ElementType }[] = [
@@ -66,41 +67,56 @@ const SIDEBAR_ITEMS: { id: AMSection; label: string; icon: React.ElementType }[]
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-export function AMFullSidebar({ activeSection, onSectionChange }: AMFullSidebarProps) {
+export function AMFullSidebar({ activeSection, onSectionChange, counts }: AMFullSidebarProps) {
   return (
-    <aside className="w-64 bg-card border-r border-border h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-border flex justify-center">
-        <img 
-          src={assistManagerLogo} 
-          alt="Assist Manager Logo" 
-          className="w-14 h-14 rounded-full object-contain border-2 border-cyan-500/30"
-        />
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+      {/* Brand */}
+      <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
+        <span className="glow-ring flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+          <ShieldCheck className="h-5 w-5" />
+        </span>
+        <div className="leading-tight">
+          <p className="text-sm font-semibold text-sidebar-foreground">Assist Manager</p>
+          <p className="code-chip text-muted-foreground">VALA CONNECT</p>
+        </div>
       </div>
 
       {/* Navigation */}
       <ScrollArea className="flex-1">
-        <nav className="p-2 space-y-1">
+        <nav className="space-y-1 p-2">
           {SIDEBAR_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
             const isEmergency = item.id === 'emergency_stop';
+            const count = counts?.[item.id];
 
             return (
               <button
                 key={item.id}
                 onClick={() => onSectionChange(item.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                     : isEmergency
-                    ? 'text-destructive hover:bg-destructive/10'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'text-destructive hover:bg-destructive/10'
+                      : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="flex-1 truncate text-left">{item.label}</span>
+                {count ? (
+                  <span
+                    className={cn(
+                      'code-chip rounded-full px-1.5 py-0.5 text-[10px]',
+                      isActive
+                        ? 'bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground'
+                        : 'bg-primary/15 text-primary',
+                    )}
+                  >
+                    {count}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -108,9 +124,9 @@ export function AMFullSidebar({ activeSection, onSectionChange }: AMFullSidebarP
       </ScrollArea>
 
       {/* Footer Status */}
-      <div className="p-3 border-t border-border">
+      <div className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="h-2 w-2 animate-pulse rounded-full bg-success" />
           <span className="text-muted-foreground">System Secure</span>
         </div>
       </div>
