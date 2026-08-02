@@ -59,13 +59,18 @@ export const useSessionWindows = (sessionId: string | undefined) =>
 
 function useAmMutation<TVars, TData>(
   fn: (vars: TVars) => Promise<TData>,
-  options: { success: string | ((data: TData) => string); invalidate: readonly unknown[][] },
+  options: {
+    success: string | ((data: TData) => string);
+    invalidate: readonly (readonly unknown[])[];
+  },
 ) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
     onSuccess: (data) => {
-      options.invalidate.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
+      options.invalidate.forEach((key) =>
+        queryClient.invalidateQueries({ queryKey: [...key] }),
+      );
       toast.success(
         typeof options.success === "function" ? options.success(data) : options.success,
       );
