@@ -21,6 +21,15 @@ export const amKeys = {
 
 export const useSessions = () =>
   useQuery({ queryKey: amKeys.sessions, queryFn: api.fetchSessions });
+
+/** Sessions that are live (active or paused). */
+export const useLiveSessions = () => {
+  const query = useSessions();
+  return {
+    ...query,
+    data: (query.data ?? []).filter((s) => s.status === "active" || s.status === "paused"),
+  };
+};
 export const useAgents = () => useQuery({ queryKey: amKeys.agents, queryFn: api.fetchAgents });
 export const useEndUsers = () =>
   useQuery({ queryKey: amKeys.endUsers, queryFn: api.fetchEndUsers });
