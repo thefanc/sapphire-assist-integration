@@ -1,75 +1,130 @@
 /**
  * ASSIST DASHBOARD
- * Top Status Cards - All Clickable
+ * Live status cards, recent sessions and agent presence — all from the backend.
  */
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Radio,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Brain,
+  Activity,
   AlertTriangle,
+  Brain,
+  CheckCircle,
+  Clock,
   MonitorPlay,
+  Radio,
   Users,
-} from 'lucide-react';
-import type { AMSection } from '../AMFullSidebar';
+  XCircle,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useAgents, useApprovals, useRequests, useSessions } from "@/lib/assist-manager/hooks";
+import {
+  ACCESS_MODE_LABEL,
+  CodeChip,
+  EmptyState,
+  LoadingBlock,
+  ScreenHeader,
+  StatusPill,
+  formatDuration,
+  titleCase,
+} from "../am-ui";
+import { useAM } from "../am-context";
+import type { AMSection } from "../AMFullSidebar";
 
 interface AMAssistDashboardProps {
   onNavigate: (section: AMSection) => void;
 }
 
-const DASHBOARD_CARDS = [
-  { id: 'active_sessions', label: 'Live Sessions', value: '8', icon: Radio, color: 'text-green-500', bg: 'bg-green-500/10' },
-  { id: 'session_requests', label: 'Pending Requests', value: '12', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-  { id: 'pending_approval', label: 'Approved Sessions', value: '45', icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { id: 'active_sessions', label: 'Blocked Sessions', value: '3', icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
-  { id: 'ai_assist_layer', label: 'AI Assisted', value: '28', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-  { id: 'emergency_stop', label: 'Security Alerts', value: '2', icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive/10' },
-];
-
-const RECENT_SESSIONS = [
-  { id: 'SVL-A8K2M9', user: 'USR-****42', agent: 'AGT-****15', status: 'active', type: 'Support', duration: '12:34' },
-  { id: 'SVL-B3N7P1', user: 'USR-****67', agent: 'AGT-****22', status: 'pending', type: 'Dev', duration: '--:--' },
-  { id: 'SVL-C9X4L6', user: 'USR-****89', agent: 'AGT-****08', status: 'active', type: 'Franchise', duration: '05:21' },
-  { id: 'SVL-D5M2K8', user: 'USR-****34', agent: 'AGT-****31', status: 'ended', type: 'Sales', duration: '23:45' },
-];
-
 export function AMAssistDashboard({ onNavigate }: AMAssistDashboardProps) {
+  const { openSession } = useAM();
+  const { data: sessions = [], isLoading } = useSessions();
+  const { data: requests = [] } = useRequests();
+  const { data: approvals = [] } = useApprovals();
+  const { data: agents = [] } = useAgents();
+
+  const cards = [
+    {
+      section: "active_sessions" as AMSection,
+      label: "Live Sessions",
+      value: sessions.filter((s) => s.status === "active" || s.status === "paused").length,
+      icon: Radio,
+      tone: "text-success bg-success/10 border-success/25",
+    },
+    {
+      section: "session_requests" as AMSection,
+      label: "Pending Requests",
+      value: requests.filter((r) => r.status === "pending").length,
+      icon: Clock,
+      tone: "text-warning bg-warning/10 border-warning/25",
+    },
+    {
+      section: "pending_approval" as AMSection,
+      label: "Approved Sessions",
+      value: approvals.filter((a) => a.status === "approved").length,
+      icon: CheckCircle,
+      tone: "text-info bg-info/10 border-info/25",
+    },
+    {
+      section: "active_sessions" as AMSection,
+      label: "Blocked Sessions",
+      value: sessions.filter((s) => s.status === "blocked").length,
+      icon: XCircle,
+      tone: "text-destructive bg-destructive/10 border-destructive/25",
+    },
+    {
+      section: "ai_assist_layer" as AMSection,
+      label: "AI Assisted",
+      value: sessions.filter((s) => s.ai_involved).length,
+      icon: Brain,
+      tone: "text-primary bg-primary/10 border-primary/25",
+    },
+    {
+      section: "emergency_stop" as AMSection,
+      label: "Security Alerts",
+      value: sessions.filter((s) => s.risk_level === "high" || s.status === "terminated").length,
+      icon: AlertTriangle,
+      tone: "text-destructive bg-destructive/10 border-destructive/25",
+    },
+  ];
+
+  const recent = sessions.slice(0, 6);
+
   return (
     <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Assist Dashboard</h1>
-            <p className="text-muted-foreground">VALA Connect - Remote Session Management</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm text-muted-foreground">System Online</span>
-          </div>
-        </div>
+      <div className="space-y-6 p-6">
+        <ScreenHeader
+          title="Assist Dashboard"
+          subtitle="VALA Connect — remote session management"
+          actions={
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Activity className="h-4 w-4 text-success" />
+              System Online
+            </span>
+          }
+        />
 
-        {/* Status Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {DASHBOARD_CARDS.map((card) => {
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {cards.map((card) => {
             const Icon = card.icon;
             return (
               <Card
                 key={card.label}
-                className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => onNavigate(card.id as AMSection)}
+                role="button"
+                tabIndex={0}
+                onClick={() => onNavigate(card.section)}
+                onKeyDown={(e) => e.key === "Enter" && onNavigate(card.section)}
+                className="cursor-pointer transition-colors hover:border-primary"
               >
                 <CardContent className="p-4">
-                  <div className={`w-10 h-10 rounded-lg ${card.bg} flex items-center justify-center mb-3`}>
-                    <Icon className={`h-5 w-5 ${card.color}`} />
-                  </div>
-                  <p className="text-2xl font-bold">{card.value}</p>
+                  <span
+                    className={cn(
+                      "mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg border",
+                      card.tone,
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <p className="text-2xl font-semibold tabular-nums">{card.value}</p>
                   <p className="text-xs text-muted-foreground">{card.label}</p>
                 </CardContent>
               </Card>
@@ -77,77 +132,102 @@ export function AMAssistDashboard({ onNavigate }: AMAssistDashboardProps) {
           })}
         </div>
 
-        {/* Recent Sessions Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MonitorPlay className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MonitorPlay className="h-5 w-5 text-primary" />
               Recent Sessions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Session ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">User (Masked)</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Agent (Masked)</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {RECENT_SESSIONS.map((session) => (
-                    <tr key={session.id} className="border-b border-border hover:bg-muted/50">
-                      <td className="py-3 px-4 font-mono text-xs">{session.id}</td>
-                      <td className="py-3 px-4 font-mono text-xs">{session.user}</td>
-                      <td className="py-3 px-4 font-mono text-xs">{session.agent}</td>
-                      <td className="py-3 px-4">{session.type}</td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          variant={
-                            session.status === 'active' ? 'default' :
-                            session.status === 'pending' ? 'secondary' : 'outline'
-                          }
-                          className="text-xs"
-                        >
-                          {session.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 font-mono text-xs">{session.duration}</td>
+            {isLoading ? (
+              <LoadingBlock />
+            ) : recent.length === 0 ? (
+              <EmptyState title="No sessions yet" description="Create an assist to get started." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="px-4 py-3 font-medium">Session</th>
+                      <th className="px-4 py-3 font-medium">User</th>
+                      <th className="px-4 py-3 font-medium">Agent</th>
+                      <th className="px-4 py-3 font-medium">Type</th>
+                      <th className="px-4 py-3 font-medium">Mode</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium">Duration</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {recent.map((s) => (
+                      <tr
+                        key={s.id}
+                        onClick={() => openSession(s.id)}
+                        className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50"
+                      >
+                        <td className="px-4 py-3">
+                          <CodeChip>{s.session_code}</CodeChip>
+                        </td>
+                        <td className="code-chip px-4 py-3 text-xs">{s.end_user?.user_code ?? "—"}</td>
+                        <td className="code-chip px-4 py-3 text-xs">{s.agent?.agent_code ?? "—"}</td>
+                        <td className="px-4 py-3">{titleCase(s.assist_type)}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {ACCESS_MODE_LABEL[s.access_mode] ?? titleCase(s.access_mode)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusPill status={s.status} />
+                        </td>
+                        <td className="code-chip px-4 py-3 text-xs">
+                          {formatDuration(s.started_at, s.ended_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Live Agents */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Online Agents
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5 text-primary" />
+              Agents
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {['AGT-****15', 'AGT-****22', 'AGT-****08', 'AGT-****31'].map((agent, i) => (
-                <div key={agent} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Users className="h-4 w-4 text-primary" />
+            {agents.length === 0 ? (
+              <EmptyState title="No agents" description="No assist agents are registered." />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {agents.map((agent) => (
+                  <div
+                    key={agent.id}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Users className="h-4 w-4 text-primary" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{agent.display_name}</p>
+                      <p className="code-chip text-xs text-muted-foreground">{agent.agent_code}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        "ml-auto h-2 w-2 shrink-0 rounded-full",
+                        agent.status === "available"
+                          ? "bg-success"
+                          : agent.status === "in_session"
+                            ? "bg-warning"
+                            : "bg-muted-foreground",
+                      )}
+                      title={titleCase(agent.status)}
+                    />
                   </div>
-                  <div>
-                    <p className="font-mono text-xs">{agent}</p>
-                    <p className="text-xs text-muted-foreground">{i < 2 ? 'In Session' : 'Available'}</p>
-                  </div>
-                  <div className={`w-2 h-2 rounded-full ml-auto ${i < 2 ? 'bg-amber-500' : 'bg-green-500'}`} />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
