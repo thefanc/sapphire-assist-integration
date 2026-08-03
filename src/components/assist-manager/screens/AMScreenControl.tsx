@@ -1,115 +1,136 @@
 /**
  * SCREEN CONTROL
- * Deep control categories - View/Control/Pause/Resume/Freeze
+ * Access mode + granular control toggles for the active session.
  */
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Monitor,
-  Eye,
   Hand,
-  Pause,
-  Play,
-  Snowflake,
+  Lock,
+  Maximize,
   MousePointer2,
   Keyboard,
-  AppWindow,
-  Maximize,
-} from 'lucide-react';
+  Pause,
+  Snowflake,
+  Eye,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import {
+  useAccessModes,
+  useUpdateAccessMode,
+  useUpdateControlState,
+} from "@/lib/assist-manager/hooks";
+import type { ControlMode } from "@/lib/assist-manager/types";
+import { CodeChip, EmptyState, LoadingBlock, ScreenHeader, iconFor } from "../am-ui";
+import { SessionPicker, useActiveSession } from "../am-session";
 
-const CONTROL_MODES = [
-  { id: 'view', label: 'View Only', icon: Eye, description: 'Watch screen without any control', status: 'active' },
-  { id: 'control', label: 'Control', icon: Hand, description: 'Full mouse and keyboard control', status: 'disabled' },
-  { id: 'pause', label: 'Pause', icon: Pause, description: 'Temporarily freeze screen view', status: 'available' },
-  { id: 'resume', label: 'Resume', icon: Play, description: 'Continue paused session', status: 'available' },
-  { id: 'freeze', label: 'Freeze', icon: Snowflake, description: 'Lock current screen state', status: 'available' },
-];
-
-const CONTROL_OPTIONS = [
-  { id: 'cursor', label: 'Cursor Control', icon: MousePointer2, enabled: false },
-  { id: 'keyboard', label: 'Keyboard Input', icon: Keyboard, enabled: false },
-  { id: 'window', label: 'Window Specific', icon: AppWindow, enabled: true },
-  { id: 'resolution', label: 'Resolution Lock', icon: Maximize, enabled: true },
+const MODES: { key: ControlMode; label: string; icon: React.ElementType }[] = [
+  { key: "view", label: "View Only", icon: Eye },
+  { key: "control", label: "Take Control", icon: Hand },
+  { key: "pause", label: "Pause Control", icon: Pause },
+  { key: "freeze", label: "Freeze Screen", icon: Snowflake },
 ];
 
 export function AMScreenControl() {
+  const { sessions, session, control, isLoading } = useActiveSession();
+  const { data: accessModes = [] } = useAccessModes();
+  const updateControl = useUpdateControlState();
+  const updateAccessMode = useUpdateAccessMode();
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <LoadingBlock />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          title="No session to control"
+          description="Screen control activates once a session is live."
+        />
+      </div>
+    );
+  }
+
+  const toggles = [
+    { key: "cursor_control" as const, label: "Cursor Control", icon: MousePointer2 },
+    { key: "keyboard_control" as const, label: "Keyboard Control", icon: Keyboard },
+    { key: "window_specific" as const, label: "Window-Specific Access", icon: Maximize },
+    { key: "resolution_lock" as const, label: "Resolution Lock", icon: Lock },
+  ];
+
   return (
     <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold">Screen Control</h1>
-          <p className="text-muted-foreground">Manage screen viewing and control permissions</p>
-        </div>
+      <div className="space-y-6 p-6">
+        <ScreenHeader
+          title="Screen Control"
+          subtitle="Remote control permissions and access modes"
+          actions={<SessionPicker sessions={sessions} value={session.id} />}
+        />
 
-        {/* Control Modes */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Monitor className="h-5 w-5" />
-              Control Modes
-            </CardTitle>
+            <CardTitle className="text-base">Control Mode</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {CONTROL_MODES.map((mode) => {
-                const Icon = mode.icon;
-                return (
-                  <Card 
-                    key={mode.id}
-                    className={`cursor-pointer transition-colors ${
-                      mode.status === 'active' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'
-                    }`}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <Icon className={`h-8 w-8 mx-auto mb-2 ${
-                        mode.status === 'active' ? 'text-primary' : 
-                        mode.status === 'disabled' ? 'text-muted-foreground' : 'text-foreground'
-                      }`} />
-                      <p className="font-medium text-sm">{mode.label}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{mode.description}</p>
-                      <Badge 
-                        variant={
-                          mode.status === 'active' ? 'default' :
-                          mode.status === 'disabled' ? 'secondary' : 'outline'
-                        }
-                        className="mt-2"
-                      >
-                        {mode.status}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+          <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {MODES.map((mode) => {
+              const active = control?.control_mode === mode.key;
+              const Icon = mode.icon;
+              return (
+                <button
+                  key={mode.key}
+                  type="button"
+                  onClick={() =>
+                    updateControl.mutate({
+                      sessionId: session.id,
+                      patch: { control_mode: mode.key, is_paused: mode.key === "pause" },
+                    })
+                  }
+                  className={cn(
+                    "rounded-lg border p-4 text-center transition-colors",
+                    active
+                      ? "border-primary bg-primary/10 glow-ring"
+                      : "border-border hover:border-primary/50",
+                  )}
+                >
+                  <Icon className={cn("mx-auto mb-2 h-6 w-6", active && "text-primary")} />
+                  <p className="text-sm font-medium">{mode.label}</p>
+                </button>
+              );
+            })}
           </CardContent>
         </Card>
 
-        {/* Control Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Input Controls</CardTitle>
+              <CardTitle className="text-base">Granular Controls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {CONTROL_OPTIONS.map((option) => {
-                const Icon = option.icon;
+              {toggles.map((t) => {
+                const Icon = t.icon;
                 return (
-                  <div 
-                    key={option.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  <div
+                    key={t.key}
+                    className="flex items-center justify-between rounded-lg border border-border bg-muted/40 p-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-5 w-5" />
-                      <span className="text-sm">{option.label}</span>
-                    </div>
-                    <Badge variant={option.enabled ? 'default' : 'secondary'}>
-                      {option.enabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
+                    <span className="flex items-center gap-2 text-sm">
+                      <Icon className="h-4 w-4 text-primary" />
+                      {t.label}
+                    </span>
+                    <Switch
+                      checked={Boolean(control?.[t.key])}
+                      onCheckedChange={(v) =>
+                        updateControl.mutate({ sessionId: session.id, patch: { [t.key]: v } })
+                      }
+                    />
                   </div>
                 );
               })}
@@ -118,46 +139,58 @@ export function AMScreenControl() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Restrictions</CardTitle>
+              <CardTitle className="text-base">Access Modes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                <p className="text-sm font-medium text-green-500">NO FULL SYSTEM ACCESS</p>
-                <p className="text-xs text-muted-foreground mt-1">Default restriction - window specific only</p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <p className="text-sm font-medium text-amber-500">LATENCY OPTIMIZATION</p>
-                <p className="text-xs text-muted-foreground mt-1">Auto-adjust quality based on connection</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <p className="text-sm font-medium text-blue-500">RESOLUTION LOCKED</p>
-                <p className="text-xs text-muted-foreground mt-1">Match target display resolution</p>
-              </div>
+              {accessModes.map((mode) => {
+                const Icon = iconFor(mode.icon);
+                return (
+                  <div
+                    key={mode.id}
+                    className="flex items-start justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Icon className="mt-0.5 h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">{mode.label}</p>
+                        <p className="text-xs text-muted-foreground">{mode.description}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={mode.is_active}
+                      onCheckedChange={(v) => updateAccessMode.mutate({ id: mode.id, isActive: v })}
+                    />
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Actions */}
         <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline">
-                <Eye className="h-4 w-4 mr-2" />
-                Switch to View Only
-              </Button>
-              <Button variant="outline">
-                <Hand className="h-4 w-4 mr-2" />
-                Request Control
-              </Button>
-              <Button variant="outline">
-                <Pause className="h-4 w-4 mr-2" />
-                Pause Session
-              </Button>
-              <Button variant="outline">
-                <Snowflake className="h-4 w-4 mr-2" />
-                Freeze Screen
-              </Button>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <CodeChip>{session.session_code}</CodeChip>
+              <CodeChip>{session.resolution}</CodeChip>
+              <CodeChip>{session.frame_rate} fps</CodeChip>
+              <CodeChip>{control?.control_mode ?? "view"} mode</CodeChip>
             </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                updateControl.mutate({
+                  sessionId: session.id,
+                  patch: {
+                    control_mode: "view",
+                    cursor_control: false,
+                    keyboard_control: false,
+                  },
+                })
+              }
+            >
+              Revoke control
+            </Button>
           </CardContent>
         </Card>
       </div>
