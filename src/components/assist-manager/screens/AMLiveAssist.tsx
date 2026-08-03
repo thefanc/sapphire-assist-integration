@@ -1,198 +1,257 @@
 /**
  * LIVE ASSIST
- * UltraViewer style - Real-time session control
+ * Real-time remote assist view for the selected session.
  */
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 import {
-  Radio,
+  Activity,
+  Brain,
+  Camera,
+  Maximize2,
+  MessageSquare,
   Monitor,
-  MousePointer2,
-  Keyboard,
+  MousePointer,
   Pause,
   Play,
+  Shield,
   Square,
-  Maximize,
-  Eye,
-  Hand,
-} from 'lucide-react';
+  Keyboard,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+import {
+  useEndSession,
+  usePauseResume,
+  useSessionWindows,
+  useUpdateControlState,
+} from "@/lib/assist-manager/hooks";
+import {
+  ACCESS_MODE_LABEL,
+  CodeChip,
+  EmptyState,
+  LoadingBlock,
+  RiskPill,
+  ScreenHeader,
+  StatusPill,
+  formatDuration,
+} from "../am-ui";
+import { SessionPicker, useActiveSession } from "../am-session";
+import { useAM } from "../am-context";
 
 export function AMLiveAssist() {
-  const [cursorControl, setCursorControl] = useState(false);
-  const [keyboardControl, setKeyboardControl] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const { sessions, session, control, isLoading } = useActiveSession();
+  const { data: windows = [] } = useSessionWindows(session?.id);
+  const pauseResume = usePauseResume();
+  const endSession = useEndSession();
+  const updateControl = useUpdateControlState();
+  const { setSection } = useAM();
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <LoadingBlock />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          title="No live session"
+          description="Approve a pending session to start assisting."
+        />
+      </div>
+    );
+  }
+
+  const visibleWindow =
+    windows.find((w) => w.is_visible)?.title ?? session.end_user?.active_window ?? "Full desktop";
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Live Assist</h1>
-            <p className="text-muted-foreground">Real-time remote session control</p>
+      <div className="space-y-6 p-6">
+        <ScreenHeader
+          title="Live Assist"
+          subtitle={`Session ${session.session_code} · ${session.end_user?.device ?? "device"}`}
+          actions={
+            <>
+              <SessionPicker sessions={sessions} value={session.id} />
+              <StatusPill status={session.status} />
+            </>
+          }
+        />
+
+        <Card className="overflow-hidden">
+          <div className="relative flex aspect-video items-center justify-center bg-muted/40 panel-grid">
+            <div className="text-center">
+              <Monitor className="mx-auto mb-3 h-14 w-14 text-primary" />
+              <p className="font-medium">{visibleWindow}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {session.resolution} · {session.frame_rate} fps · {session.latency_ms} ms latency
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Stream renders here once the assist relay is connected.
+              </p>
+            </div>
+            <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+              <CodeChip>{ACCESS_MODE_LABEL[session.access_mode] ?? session.access_mode}</CodeChip>
+              <RiskPill risk={session.risk_level} />
+            </div>
+            <div className="absolute right-4 top-4">
+              <Button size="sm" variant="secondary" onClick={() => setSection("screen_control")}>
+                <Maximize2 className="mr-1 h-4 w-4" />
+                Controls
+              </Button>
+            </div>
           </div>
-          <Badge variant="default" className="text-sm">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
-            Connected
-          </Badge>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Screen View */}
-          <Card className="lg:col-span-3">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-4">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  pauseResume.mutate({ id: session.id, pause: session.status === "active" })
+                }
+              >
+                {session.status === "active" ? (
+                  <>
+                    <Pause className="mr-1 h-4 w-4" /> Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-1 h-4 w-4" /> Resume
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  session.id &&
+                  updateControl.mutate({
+                    sessionId: session.id,
+                    patch: { cursor_control: !control?.cursor_control },
+                  })
+                }
+              >
+                <MousePointer className="mr-1 h-4 w-4" />
+                Cursor {control?.cursor_control ? "on" : "off"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  updateControl.mutate({
+                    sessionId: session.id,
+                    patch: { keyboard_control: !control?.keyboard_control },
+                  })
+                }
+              >
+                <Keyboard className="mr-1 h-4 w-4" />
+                Keyboard {control?.keyboard_control ? "on" : "off"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setSection("chat_voice")}>
+                <MessageSquare className="mr-1 h-4 w-4" />
+                Chat
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => toast.info("Screenshots are blocked by privacy controls")}
+              >
+                <Camera className="mr-1 h-4 w-4" />
+                Snapshot
+              </Button>
+            </div>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() =>
+                endSession.mutate({ id: session.id, reason: "Ended by Assist Manager" })
+              }
+            >
+              <Square className="mr-1 h-4 w-4" />
+              End Session
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card>
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Monitor className="h-5 w-5" />
-                  Session: SVL-A8K2M9
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant={isPaused ? 'secondary' : 'default'}>
-                    {isPaused ? 'Paused' : 'Live'}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground font-mono">12:34:56</span>
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Activity className="h-4 w-4 text-primary" /> Session Metrics
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              {/* Screen Preview Placeholder */}
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                <div className="text-center">
-                  <Monitor className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">Remote Screen View</p>
-                  <p className="text-sm text-muted-foreground">USR-****42's Desktop</p>
-                  <p className="text-xs text-muted-foreground mt-2">1920 × 1080 @ 30fps</p>
-                </div>
-              </div>
+            <CardContent className="space-y-2 text-sm">
+              <Row label="Duration" value={formatDuration(session.started_at)} />
+              <Row label="Actions" value={String(session.actions_count)} />
+              <Row label="Latency" value={`${session.latency_ms} ms`} />
+              <Row label="Frame rate" value={`${session.frame_rate} fps`} />
+            </CardContent>
+          </Card>
 
-              {/* Control Bar */}
-              <div className="flex items-center justify-center gap-4 mt-4 p-3 bg-muted rounded-lg">
-                <Button 
-                  variant={isPaused ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setIsPaused(!isPaused)}
-                >
-                  {isPaused ? <Play className="h-4 w-4 mr-1" /> : <Pause className="h-4 w-4 mr-1" />}
-                  {isPaused ? 'Resume' : 'Pause'}
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Maximize className="h-4 w-4 mr-1" />
-                  Fullscreen
-                </Button>
-                <Button variant="destructive" size="sm">
-                  <Square className="h-4 w-4 mr-1" />
-                  End Session
-                </Button>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Shield className="h-4 w-4 text-success" /> Permissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {session.permissions.map((p) => (
+                  <CodeChip key={p}>{p.replace(/_/g, " ")}</CodeChip>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {session.restrictions.map((r) => (
+                  <span
+                    key={r}
+                    className="rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-0.5 text-xs text-destructive"
+                  >
+                    {r}
+                  </span>
+                ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Control Panel */}
-          <div className="space-y-4">
-            {/* Mode Toggle */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Session Mode</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">View Only</span>
-                  </div>
-                  <Badge variant="default">Active</Badge>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded">
-                  <div className="flex items-center gap-2">
-                    <Hand className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Control</span>
-                  </div>
-                  <Badge variant="outline">Disabled</Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Control Toggles */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Control Options</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MousePointer2 className="h-4 w-4" />
-                    <span className="text-sm">Cursor Control</span>
-                  </div>
-                  <Switch 
-                    checked={cursorControl}
-                    onCheckedChange={setCursorControl}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Keyboard className="h-4 w-4" />
-                    <span className="text-sm">Keyboard Control</span>
-                  </div>
-                  <Switch 
-                    checked={keyboardControl}
-                    onCheckedChange={setKeyboardControl}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Session Info */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Session Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Target</span>
-                  <span className="font-mono">USR-****42</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Agent</span>
-                  <span className="font-mono">AGT-****15</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-mono">12:34</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Latency</span>
-                  <span className="text-green-500">24ms</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Resolution</span>
-                  <span>1920×1080</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardContent className="p-3 space-y-2">
-                <Button variant="outline" className="w-full" size="sm">
-                  Request Control
-                </Button>
-                <Button variant="outline" className="w-full" size="sm">
-                  Send File
-                </Button>
-                <Button variant="outline" className="w-full" size="sm">
-                  Open Chat
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Brain className="h-4 w-4 text-info" /> AI Layer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <Row label="AI involved" value={session.ai_involved ? "Yes" : "No"} />
+              <Row label="Trust score" value={`${session.ai_score}%`} />
+              <Row label="Auto translate" value={control?.auto_translate ? "On" : "Off"} />
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => setSection("ai_assist_layer")}
+              >
+                Open AI layer
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </ScrollArea>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="code-chip">{value}</span>
+    </div>
   );
 }
 
