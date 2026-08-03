@@ -1,186 +1,196 @@
 /**
  * PENDING APPROVAL
- * Sessions awaiting boss/manager approval
+ * Sessions awaiting boss / manager authorization.
  */
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
+import { useEffect, useState } from "react";
+import { AlertTriangle, Check, Clock, Timer, User, X } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useApprovals, useDecideApproval } from "@/lib/assist-manager/hooks";
 import {
-  Clock,
-  Check,
-  X,
-  AlertTriangle,
-  User,
-  Timer,
-} from 'lucide-react';
+  CodeChip,
+  EmptyState,
+  LoadingBlock,
+  ScreenHeader,
+  StatCard,
+  StatusPill,
+  countdown,
+  timeAgo,
+  titleCase,
+} from "../am-ui";
 
-const PENDING_APPROVALS = [
-  {
-    id: 'APR-001',
-    sessionId: 'SVL-P9K2M4',
-    requester: 'AGT-****15',
-    target: 'USR-****42',
-    type: 'Control',
-    awaiting: 'Boss Owner',
-    expiresIn: 12,
-    submitted: '3 min ago',
-    scope: 'Full Control',
-  },
-  {
-    id: 'APR-002',
-    sessionId: 'SVL-Q3N7P1',
-    requester: 'AGT-****22',
-    target: 'USR-****67',
-    type: 'Dev',
-    awaiting: 'Manager',
-    expiresIn: 8,
-    submitted: '7 min ago',
-    scope: 'Limited Control',
-  },
-  {
-    id: 'APR-003',
-    sessionId: 'SVL-R5X4L6',
-    requester: 'AGT-****08',
-    target: 'USR-****89',
-    type: 'Support',
-    awaiting: 'Boss Owner',
-    expiresIn: 2,
-    submitted: '13 min ago',
-    scope: 'View + Chat',
-  },
-];
+const WINDOW_MINUTES = 15;
 
 export function AMPendingApproval() {
+  const { data: approvals = [], isLoading } = useApprovals();
+  const decide = useDecideApproval();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const pending = approvals.filter((a) => a.status === "pending");
+  const today = (iso: string | null) =>
+    Boolean(iso) && new Date(iso as string).toDateString() === new Date().toDateString();
+
   return (
     <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Pending Approval</h1>
-            <p className="text-muted-foreground">Sessions awaiting authorization</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-500" />
-            <span className="text-sm">{PENDING_APPROVALS.length} Waiting</span>
-          </div>
-        </div>
+      <div className="space-y-6 p-6">
+        <ScreenHeader
+          title="Pending Approval"
+          subtitle="Sessions awaiting authorization"
+          actions={
+            <span className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/10 px-3 py-1 text-xs font-medium text-warning">
+              <Clock className="h-3.5 w-3.5" />
+              {pending.length} Waiting
+            </span>
+          }
+        />
 
-        {/* Approval Cards */}
-        <div className="space-y-4">
-          {PENDING_APPROVALS.map((approval) => (
-            <Card 
-              key={approval.id}
-              className={`border-l-4 ${
-                approval.expiresIn <= 5 ? 'border-l-red-500' : 'border-l-amber-500'
-              }`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-3">
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-medium">{approval.sessionId}</span>
-                      <Badge variant="secondary">{approval.type}</Badge>
-                      <Badge variant="outline">{approval.scope}</Badge>
-                    </div>
+        {isLoading ? (
+          <LoadingBlock />
+        ) : pending.length === 0 ? (
+          <EmptyState
+            title="No approvals waiting"
+            description="New assist requests appear here for authorization."
+          />
+        ) : (
+          <div className="space-y-4">
+            {pending.map((approval) => {
+              const minutesLeft = Math.max(
+                0,
+                (new Date(approval.expires_at).getTime() - Date.now()) / 60000,
+              );
+              const urgent = minutesLeft <= 5;
+              return (
+                <Card
+                  key={approval.id}
+                  className={cn("border-l-4", urgent ? "border-l-destructive" : "border-l-warning")}
+                >
+                  <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CodeChip>{approval.session?.session_code ?? approval.approval_code}</CodeChip>
+                        <CodeChip>{titleCase(approval.assist_type)}</CodeChip>
+                        <CodeChip>{approval.scope}</CodeChip>
+                        <StatusPill status={approval.status} />
+                      </div>
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+                        <div>
+                          <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                            <User className="h-3 w-3" /> Requester
+                          </p>
+                          <p className="code-chip mt-1">{approval.agent?.agent_code ?? "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Target
+                          </p>
+                          <p className="code-chip mt-1">{approval.end_user?.user_code ?? "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Awaiting
+                          </p>
+                          <p className="mt-1">{approval.awaiting_role}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Submitted
+                          </p>
+                          <p className="mt-1">{timeAgo(approval.submitted_at)}</p>
+                        </div>
+                      </div>
+
                       <div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <User className="h-3 w-3" /> Requester
+                        <div className="mb-1.5 flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Timer className="h-3 w-3" />
+                            Expires in
+                          </span>
+                          <span
+                            className={cn(
+                              "code-chip font-medium",
+                              urgent ? "text-destructive" : "text-foreground",
+                            )}
+                          >
+                            {countdown(approval.expires_at)}
+                          </span>
+                        </div>
+                        <Progress
+                          value={Math.min(100, (minutesLeft / WINDOW_MINUTES) * 100)}
+                          className="h-1.5"
+                        />
+                      </div>
+
+                      {urgent ? (
+                        <p className="flex items-center gap-1.5 text-xs text-destructive">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Request will expire soon
                         </p>
-                        <p className="font-mono">{approval.requester}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Target</p>
-                        <p className="font-mono">{approval.target}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Awaiting</p>
-                        <p className="font-medium">{approval.awaiting}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Submitted</p>
-                        <p>{approval.submitted}</p>
-                      </div>
+                      ) : null}
                     </div>
 
-                    {/* Expiry Timer */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Timer className="h-3 w-3" />
-                          Expires in
-                        </span>
-                        <span className={approval.expiresIn <= 5 ? 'text-red-500 font-medium' : ''}>
-                          {approval.expiresIn} minutes
-                        </span>
-                      </div>
-                      <Progress 
-                        value={(approval.expiresIn / 15) * 100} 
-                        className={`h-1 ${approval.expiresIn <= 5 ? '[&>div]:bg-red-500' : ''}`}
-                      />
+                    <div className="flex shrink-0 flex-row gap-2 lg:flex-col">
+                      <Button
+                        size="sm"
+                        disabled={decide.isPending}
+                        onClick={() =>
+                          decide.mutate({
+                            id: approval.id,
+                            sessionId: approval.session?.id,
+                            decision: "approved",
+                          })
+                        }
+                      >
+                        <Check className="mr-1 h-4 w-4" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={decide.isPending}
+                        onClick={() =>
+                          decide.mutate({
+                            id: approval.id,
+                            sessionId: approval.session?.id,
+                            decision: "rejected",
+                            note: "Rejected by authorizer",
+                          })
+                        }
+                      >
+                        <X className="mr-1 h-4 w-4" />
+                        Reject
+                      </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-                    {/* Warning */}
-                    {approval.expiresIn <= 5 && (
-                      <div className="flex items-center gap-2 text-xs text-red-500">
-                        <AlertTriangle className="h-3 w-3" />
-                        Request will expire soon
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2">
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      <Check className="h-4 w-4 mr-1" />
-                      Approve
-                    </Button>
-                    <Button size="sm" variant="destructive">
-                      <X className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Clock className="h-4 w-4 mr-1" />
-                      Extend
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Clock className="h-8 w-8 mx-auto text-amber-500 mb-2" />
-              <p className="text-2xl font-bold">3</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Check className="h-8 w-8 mx-auto text-green-500 mb-2" />
-              <p className="text-2xl font-bold">28</p>
-              <p className="text-xs text-muted-foreground">Approved Today</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <X className="h-8 w-8 mx-auto text-red-500 mb-2" />
-              <p className="text-2xl font-bold">4</p>
-              <p className="text-xs text-muted-foreground">Rejected Today</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard label="Pending" value={pending.length} icon={Clock} tone="warning" />
+          <StatCard
+            label="Approved today"
+            value={approvals.filter((a) => a.status === "approved" && today(a.decided_at)).length}
+            icon={Check}
+            tone="success"
+          />
+          <StatCard
+            label="Rejected today"
+            value={approvals.filter((a) => a.status === "rejected" && today(a.decided_at)).length}
+            icon={X}
+            tone="danger"
+          />
         </div>
       </div>
     </ScrollArea>

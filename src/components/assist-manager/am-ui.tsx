@@ -1,4 +1,21 @@
 import type { ReactNode } from "react";
+import {
+  AppWindow,
+  Bell,
+  Brain,
+  Camera,
+  Clipboard,
+  Clock,
+  Eye,
+  EyeOff,
+  FileX,
+  Globe,
+  Layers,
+  Lock,
+  Settings as SettingsIcon,
+  Shield,
+  Video,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -201,4 +218,33 @@ export function CodeChip({ children }: { children: ReactNode }) {
       {children}
     </Badge>
   );
+}
+
+const ICONS: Record<string, React.ElementType> = {
+  camera: Camera,
+  video: Video,
+  clipboard: Clipboard,
+  "file-x": FileX,
+  eye: Eye,
+  "eye-off": EyeOff,
+  lock: Lock,
+  "app-window": AppWindow,
+  globe: Globe,
+  layers: Layers,
+  shield: Shield,
+};
+
+export function iconFor(name: string): React.ElementType {
+  return ICONS[name] ?? Shield;
+}
+
+export const SECTION_ICONS: Record<string, React.ElementType> = {
+  "Session Defaults": Clock,
+  "Privacy & Security": Shield,
+  "AI Configuration": Brain,
+  Notifications: Bell,
+};
+
+export function sectionIcon(section: string): React.ElementType {
+  return SECTION_ICONS[section] ?? SettingsIcon;
 }
