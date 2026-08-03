@@ -223,7 +223,7 @@ export async function createAssistSession(input: CreateAssistInput) {
 export async function decideRequest(input: {
   id: string;
   decision: "approved" | "rejected";
-  note?: string;
+  note?: string | undefined;
 }) {
   mutate(
     await supabase
@@ -239,9 +239,9 @@ export async function decideRequest(input: {
 
 export async function decideApproval(input: {
   id: string;
-  sessionId?: string | null;
+  sessionId?: string | null | undefined;
   decision: "approved" | "rejected";
-  note?: string;
+  note?: string | undefined;
 }) {
   mutate(
     await supabase
