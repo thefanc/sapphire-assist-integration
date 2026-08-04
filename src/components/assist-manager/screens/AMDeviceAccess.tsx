@@ -1,176 +1,227 @@
 /**
  * DEVICE ACCESS
- * App Only / Browser Only / Single Window / No Background
+ * Access modes and visible-window control for the live session.
  */
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
+import { AppWindow, CheckCircle2, Laptop, Lock, Shield } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import {
-  Laptop,
-  AppWindow,
-  Globe,
-  Layers,
-  EyeOff,
-  Shield,
-  Lock,
-  CheckCircle2,
-} from 'lucide-react';
-
-const ACCESS_MODES = [
-  { id: 'app_only', label: 'App Only', icon: AppWindow, description: 'Access restricted to specific application', active: true },
-  { id: 'browser_only', label: 'Browser Only', icon: Globe, description: 'Access limited to browser window', active: false },
-  { id: 'single_window', label: 'Single Window', icon: Layers, description: 'Only one window visible at a time', active: true },
-  { id: 'no_background', label: 'No Background', icon: EyeOff, description: 'Background processes hidden', active: true },
-];
-
-const CURRENT_ACCESS = {
-  device: 'Windows 11 Desktop',
-  user: 'USR-****42',
-  activeWindow: 'Chrome - Support Portal',
-  permissions: ['Screen View', 'Chat', 'File Transfer'],
-  restrictions: ['No System Access', 'No Background', 'Single Window'],
-};
+  useAccessModes,
+  useSessionWindows,
+  useUpdateAccessMode,
+  useUpdateWindowVisibility,
+} from "@/lib/assist-manager/hooks";
+import {
+  CodeChip,
+  EmptyState,
+  LoadingBlock,
+  ScreenHeader,
+  iconFor,
+  titleCase,
+} from "../am-ui";
+import { SessionPicker, useActiveSession } from "../am-session";
 
 export function AMDeviceAccess() {
+  const { sessions, session, isLoading } = useActiveSession();
+  const { data: modes = [], isLoading: modesLoading } = useAccessModes();
+  const { data: windows = [] } = useSessionWindows(session?.id);
+  const updateMode = useUpdateAccessMode();
+  const setVisibleWindow = useUpdateWindowVisibility(session?.id);
+
   return (
     <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold">Device Access</h1>
-          <p className="text-muted-foreground">Control what parts of the device can be accessed</p>
-        </div>
+      <div className="space-y-6 p-6">
+        <ScreenHeader
+          title="Device Access"
+          subtitle="Control what parts of the device can be accessed"
+          actions={<SessionPicker sessions={sessions} value={session?.id} />}
+        />
 
-        {/* Current Access Info */}
-        <Card className="border-primary/50">
+        <Card className="border-primary/40">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Laptop className="h-5 w-5" />
               Current Session Access
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Device</p>
-                <p className="font-medium text-sm">{CURRENT_ACCESS.device}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">User</p>
-                <p className="font-mono text-sm">{CURRENT_ACCESS.user}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Active Window</p>
-                <p className="font-medium text-sm">{CURRENT_ACCESS.activeWindow}</p>
-              </div>
-            </div>
+            {isLoading ? (
+              <LoadingBlock rows={2} />
+            ) : !session ? (
+              <EmptyState
+                title="No live session"
+                description="Start or approve a session to inspect device access."
+              />
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Session</p>
+                    <div className="mt-1">
+                      <CodeChip>{session.session_code}</CodeChip>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Device</p>
+                    <p className="text-sm font-medium">
+                      {session.end_user?.device ?? "—"}
+                      {session.end_user?.operating_system
+                        ? ` · ${session.end_user.operating_system}`
+                        : ""}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">User</p>
+                    <p className="code-chip text-sm">{session.end_user?.user_code ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Active Window</p>
+                    <p className="text-sm font-medium">
+                      {windows.find((w) => w.is_visible)?.title ??
+                        session.end_user?.active_window ??
+                        "—"}
+                    </p>
+                  </div>
+                </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Permissions</p>
-                <div className="flex flex-wrap gap-2">
-                  {CURRENT_ACCESS.permissions.map((p) => (
-                    <Badge key={p} variant="default" className="text-xs">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      {p}
-                    </Badge>
-                  ))}
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="mb-2 text-xs text-muted-foreground">Permissions</p>
+                    <div className="flex flex-wrap gap-2">
+                      {session.permissions.map((p) => (
+                        <Badge key={p} variant="default" className="text-xs">
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          {titleCase(p)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs text-muted-foreground">Restrictions</p>
+                    <div className="flex flex-wrap gap-2">
+                      {session.restrictions.map((r) => (
+                        <Badge key={r} variant="secondary" className="text-xs">
+                          <Lock className="mr-1 h-3 w-3" />
+                          {r}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Restrictions</p>
-                <div className="flex flex-wrap gap-2">
-                  {CURRENT_ACCESS.restrictions.map((r) => (
-                    <Badge key={r} variant="secondary" className="text-xs">
-                      <Lock className="h-3 w-3 mr-1" />
-                      {r}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        {/* Access Modes */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Shield className="h-5 w-5" />
               Access Modes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ACCESS_MODES.map((mode) => {
-                const Icon = mode.icon;
-                return (
-                  <div 
-                    key={mode.id}
-                    className={`flex items-center justify-between p-4 rounded-lg ${
-                      mode.active ? 'bg-green-500/10 border border-green-500/30' : 'bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        mode.active ? 'bg-green-500/20' : 'bg-muted'
-                      }`}>
-                        <Icon className={`h-5 w-5 ${mode.active ? 'text-green-500' : 'text-muted-foreground'}`} />
+            {modesLoading ? (
+              <LoadingBlock rows={2} />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {modes.map((mode) => {
+                  const Icon = iconFor(mode.icon);
+                  return (
+                    <div
+                      key={mode.id}
+                      className={`flex items-center justify-between rounded-lg p-4 ${
+                        mode.is_active
+                          ? "border border-success/30 bg-success/10"
+                          : "bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                            mode.is_active ? "bg-success/20" : "bg-muted"
+                          }`}
+                        >
+                          <Icon
+                            className={`h-5 w-5 ${
+                              mode.is_active ? "text-success" : "text-muted-foreground"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{mode.label}</p>
+                          <p className="text-xs text-muted-foreground">{mode.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{mode.label}</p>
-                        <p className="text-xs text-muted-foreground">{mode.description}</p>
-                      </div>
+                      <Switch
+                        checked={mode.is_active}
+                        disabled={updateMode.isPending}
+                        onCheckedChange={(checked) =>
+                          updateMode.mutate({ id: mode.id, isActive: checked })
+                        }
+                      />
                     </div>
-                    <Switch checked={mode.active} />
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Window Selector */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Visible Windows</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {['Chrome - Support Portal', 'File Explorer', 'Settings'].map((window, i) => (
-                <div 
-                  key={window}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    i === 0 ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <AppWindow className="h-4 w-4" />
-                    <span className="text-sm">{window}</span>
-                  </div>
-                  <Badge variant={i === 0 ? 'default' : 'secondary'}>
-                    {i === 0 ? 'Active' : 'Hidden'}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            {!session ? (
+              <EmptyState title="No live session" description="Select a session to manage windows." />
+            ) : windows.length === 0 ? (
+              <EmptyState
+                title="No windows reported"
+                description="The endpoint has not published any window list for this session."
+              />
+            ) : (
+              <div className="space-y-2">
+                {windows.map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    disabled={setVisibleWindow.isPending}
+                    onClick={() =>
+                      setVisibleWindow.mutate({ sessionId: session.id, windowId: w.id })
+                    }
+                    className={`flex w-full items-center justify-between rounded-lg p-3 text-left transition-colors ${
+                      w.is_visible
+                        ? "border border-primary/30 bg-primary/10"
+                        : "bg-muted/50 hover:bg-muted"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <AppWindow className="h-4 w-4" />
+                      <span className="text-sm">{w.title}</span>
+                    </div>
+                    <Badge variant={w.is_visible ? "default" : "secondary"}>
+                      {w.is_visible ? "Active" : "Hidden"}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Security Notice */}
-        <Card className="border-green-500/50 bg-green-500/5">
+        <Card className="border-success/40 bg-success/5">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-green-500 mt-0.5" />
+              <Shield className="mt-0.5 h-5 w-5 text-success" />
               <div>
-                <p className="font-medium text-sm text-green-500">Restricted Access Mode</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Full system access is not allowed by default. Agent can only view the active window. 
-                  All other windows, background processes, and system areas are hidden.
+                <p className="text-sm font-medium text-success">Restricted Access Mode</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Full system access is not allowed by default. The agent can only view the active
+                  window. All other windows, background processes and system areas stay hidden.
                 </p>
               </div>
             </div>
