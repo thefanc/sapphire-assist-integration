@@ -1,202 +1,239 @@
 /**
  * EMERGENCY STOP
- * Critical session termination controls
+ * Instant kill switch — single session or every live session.
  */
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
+import { useState } from "react";
+import { AlertTriangle, Ban, OctagonX, Power, ShieldAlert, Zap } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import {
-  AlertOctagon,
-  Square,
-  Zap,
-  Shield,
-  AlertTriangle,
-  Clock,
-  User,
-} from 'lucide-react';
-
-const ACTIVE_SESSIONS_FOR_STOP = [
-  { id: 'SVL-A8K2M9', user: 'USR-****42', agent: 'AGT-****15', duration: '12:34', risk: 'low' },
-  { id: 'SVL-C9X4L6', user: 'USR-****89', agent: 'AGT-****08', duration: '05:21', risk: 'medium' },
-  { id: 'SVL-E7T3R2', user: 'USR-****56', agent: 'AGT-****19', duration: '18:45', risk: 'low' },
-];
-
-const RECENT_STOPS = [
-  { id: 'STOP-001', sessionId: 'SVL-X2K8M4', reason: 'Security violation detected', time: '2 hours ago', by: 'System' },
-  { id: 'STOP-002', sessionId: 'SVL-Y5N3P7', reason: 'Manual termination', time: '5 hours ago', by: 'AGT-****22' },
-];
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useEmergencyStops, useEndSession, useLiveSessions, useStopAll } from "@/lib/assist-manager/hooks";
+import {
+  CodeChip,
+  EmptyState,
+  LoadingBlock,
+  RiskPill,
+  ScreenHeader,
+  formatDuration,
+  timeAgo,
+  titleCase,
+} from "../am-ui";
 
 export function AMEmergencyStop() {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const { data: live = [], isLoading } = useLiveSessions();
+  const { data: stops = [] } = useEmergencyStops();
+  const stopAll = useStopAll();
+  const endSession = useEndSession();
+
+  const [reason, setReason] = useState("");
+  const [confirmAll, setConfirmAll] = useState(false);
+
+  const stopReason = () => (reason.trim() ? reason.trim() : "Emergency stop by Assist Manager");
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-destructive">Emergency Stop</h1>
-            <p className="text-muted-foreground">Critical session termination controls</p>
-          </div>
-          <Badge variant="destructive" className="gap-1">
-            <AlertOctagon className="h-4 w-4" />
-            Critical Actions
-          </Badge>
-        </div>
+      <div className="space-y-6 p-6">
+        <ScreenHeader
+          title="Emergency Stop"
+          subtitle="Instant kill switch for any assist session"
+          actions={
+            <Badge variant="destructive" className="gap-1">
+              <ShieldAlert className="h-4 w-4" />
+              Critical Control
+            </Badge>
+          }
+        />
 
-        {/* Emergency Stop All */}
-        <Card className="border-destructive bg-destructive/5">
-          <CardContent className="p-6 text-center">
-            <AlertOctagon className="h-16 w-16 mx-auto text-destructive mb-4" />
-            <h2 className="text-xl font-bold text-destructive mb-2">EMERGENCY STOP ALL SESSIONS</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              This will immediately terminate ALL active assist sessions. 
-              All connections will be dropped, tokens revoked, and caches cleared.
-            </p>
-            
-            {!showConfirm ? (
-              <Button 
-                variant="destructive" 
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-destructive/20">
+                <Power className="h-10 w-10 text-destructive" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-destructive">Force Stop All Sessions</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Immediately terminate every live session. All access is revoked instantly.
+                </p>
+              </div>
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason for stop (recorded in the audit trail)"
+                className="max-w-md"
+              />
+              <Button
                 size="lg"
-                onClick={() => setShowConfirm(true)}
+                variant="destructive"
+                disabled={live.length === 0 || stopAll.isPending}
+                onClick={() => setConfirmAll(true)}
               >
-                <Square className="h-5 w-5 mr-2" />
-                STOP ALL SESSIONS
+                <OctagonX className="mr-2 h-5 w-5" />
+                Stop All Sessions ({live.length})
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Zap className="h-5 w-5" />
+              Live Sessions
+              <Badge variant="secondary" className="ml-1">
+                {live.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <LoadingBlock rows={3} />
+            ) : live.length === 0 ? (
+              <EmptyState
+                title="No live sessions"
+                description="There is nothing to stop right now."
+              />
             ) : (
-              <div className="space-y-4">
-                <Textarea 
-                  placeholder="Enter reason for emergency stop (required)..."
-                  className="max-w-md mx-auto"
-                />
-                <div className="flex gap-3 justify-center">
-                  <Button 
-                    variant="destructive" 
-                    size="lg"
+              <div className="space-y-3">
+                {live.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/50 p-3"
                   >
-                    <Zap className="h-5 w-5 mr-2" />
-                    CONFIRM STOP ALL
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    onClick={() => setShowConfirm(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-success" />
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CodeChip>{session.session_code}</CodeChip>
+                          <RiskPill risk={session.risk_level} />
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {session.end_user?.user_code ?? "—"} ·{" "}
+                          {session.agent?.agent_code ?? "Unassigned"} ·{" "}
+                          {titleCase(session.access_mode)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm tabular-nums text-muted-foreground">
+                        {formatDuration(session.started_at)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={endSession.isPending}
+                        onClick={() =>
+                          endSession.mutate({
+                            id: session.id,
+                            reason: stopReason(),
+                            emergency: true,
+                          })
+                        }
+                      >
+                        <Ban className="mr-1 h-4 w-4" />
+                        Force Stop
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Individual Session Stops */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Stop Individual Session
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {ACTIVE_SESSIONS_FOR_STOP.map((session) => (
-                <div 
-                  key={session.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border ${
-                    session.risk === 'medium' ? 'border-amber-500/50 bg-amber-500/5' : 'bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="font-mono text-sm font-medium">{session.id}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <User className="h-3 w-3" />
-                      {session.user} ↔ {session.agent}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs">
-                      <Clock className="h-3 w-3" />
-                      {session.duration}
-                    </div>
-                    <Badge 
-                      variant={session.risk === 'medium' ? 'default' : 'secondary'}
-                      className={session.risk === 'medium' ? 'bg-amber-500' : ''}
-                    >
-                      {session.risk} risk
-                    </Badge>
-                  </div>
-                  <Button variant="destructive" size="sm">
-                    <Square className="h-4 w-4 mr-1" />
-                    Stop
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Emergency Stops */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Recent Emergency Stops</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {RECENT_STOPS.map((stop) => (
-                <div 
-                  key={stop.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <AlertOctagon className="h-4 w-4 text-destructive" />
-                    <div>
-                      <p className="font-mono text-xs">{stop.sessionId}</p>
-                      <p className="text-xs text-muted-foreground">{stop.reason}</p>
+            {stops.length === 0 ? (
+              <EmptyState
+                title="No emergency stops recorded"
+                description="Every forced termination is logged here permanently."
+              />
+            ) : (
+              <div className="space-y-3">
+                {stops.map((stop) => (
+                  <div
+                    key={stop.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/5 p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <OctagonX className="h-4 w-4 text-destructive" />
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CodeChip>{stop.session_code}</CodeChip>
+                          <Badge variant="outline" className="text-xs">
+                            {titleCase(stop.stop_type)}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {stop.reason} · stopped by {stop.stopped_by}
+                        </p>
+                      </div>
                     </div>
+                    <span className="text-xs text-muted-foreground">
+                      {timeAgo(stop.created_at)}
+                    </span>
                   </div>
-                  <div className="text-right text-xs">
-                    <p className="text-muted-foreground">{stop.time}</p>
-                    <p>by {stop.by}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Auto Behaviors */}
-        <Card className="border-green-500/50 bg-green-500/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Shield className="h-4 w-4 text-green-500" />
-              Session End Rules
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                Auto Disconnect - Connection terminated immediately
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                Auto Clear Cache - All session data cleared
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                Auto Revoke Token - Session token invalidated
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                Auto Log Summary - Session recorded to audit
-              </li>
-            </ul>
+        <Card className="border-warning/40 bg-warning/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-warning" />
+              <div>
+                <p className="text-sm font-medium text-warning">Emergency Stop Behaviour</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  A stop is instant and irreversible. Sessions are terminated, all permissions are
+                  revoked, transferred files are removed, and the event is written to the immutable
+                  audit trail.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={confirmAll} onOpenChange={setConfirmAll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Stop all {live.length} live sessions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Every active, paused and pending session will be terminated immediately. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                stopAll.mutate(stopReason());
+                setReason("");
+              }}
+            >
+              Stop All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ScrollArea>
   );
 }
