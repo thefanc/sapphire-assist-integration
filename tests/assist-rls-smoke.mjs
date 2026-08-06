@@ -160,5 +160,68 @@ await deny("delete a session", db.from("assist_sessions").delete().eq("id", sess
 await deny("delete an emergency stop", db.from("assist_emergency_stops").delete().eq("stop_type", "force_single").select("id"));
 await deny("delete a chat message", db.from("assist_chat_messages").delete().eq("session_id", sessionId).select("id"));
 
+/* --------------------- role / permission edge cases ------------------------ */
+console.log("\nrole and permission edge cases");
+
+// view: catalogue tables are read-only reference data for the console role
+await deny("add a new privacy control", db.from("assist_privacy_controls").insert({
+  control_key: code("pc", 4), label: "Rogue control", description: "should not exist",
+}).select("id"));
+await deny("add a new access mode", db.from("assist_access_modes").insert({
+  mode_key: code("mode", 4), label: "Rogue mode", description: "should not exist",
+}).select("id"));
+await deny("add a new setting", db.from("assist_settings").insert({
+  section: "general", setting_key: code("s", 4), label: "Rogue", control_type: "toggle", value: "on",
+}).select("id"));
+await deny("delete a privacy control", db.from("assist_privacy_controls").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id"));
+await deny("delete an access mode", db.from("assist_access_modes").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id"));
+await deny("delete a setting", db.from("assist_settings").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id"));
+
+// audit trail: recorded history can never be rewritten
+await deny("edit a chat message after sending", db.from("assist_chat_messages")
+  .update({ body: "tampered" }).eq("session_id", sessionId).select("id"));
+await deny("edit an emergency stop record", db.from("assist_emergency_stops")
+  .update({ reason: "tampered" }).eq("session_code", session?.session_code).select("id"));
+await deny("delete a file transfer", db.from("assist_file_transfers").delete().eq("id", transfer?.id).select("id"));
+await deny("delete an approval", db.from("assist_approvals").delete().eq("id", approval?.id).select("id"));
+await deny("delete a session request", db.from("assist_session_requests").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id"));
+await deny("delete an agent", db.from("assist_agents").delete().eq("id", agentId).select("id"));
+await deny("delete an end user", db.from("assist_end_users").delete().eq("id", endUserId).select("id"));
+await deny("delete an AI suggestion", db.from("assist_ai_suggestions").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id"));
+await deny("delete a control state row", db.from("assist_control_state").delete().eq("session_id", sessionId).select("id"));
+await deny("delete a session window", db.from("assist_session_windows").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id"));
+
+// stop: a terminated session is frozen in every dimension, not just status
+await deny("reopen a terminated session by clearing its end reason", db.from("assist_sessions")
+  .update({ end_reason: null, ended_at: null }).eq("id", sessionId).select("id"));
+await deny("re-escalate access on a terminated session", db.from("assist_sessions")
+  .update({ access_mode: "control_full", risk_level: "high" }).eq("id", sessionId).select("id"));
+
+// approve: decided requests and approvals are final for every role
+const { data: decidedReq } = await db.from("assist_session_requests")
+  .select("id").neq("status", "pending").limit(1);
+if (decidedReq?.[0]) await deny("re-decide an already-reviewed session request",
+  db.from("assist_session_requests").update({ status: "approved" }).eq("id", decidedReq[0].id).select("id"));
+await deny("mark a decided approval back to pending", db.from("assist_approvals")
+  .update({ status: "pending" }).eq("id", approval?.id).select("id"));
+
+// transfer: a completed transfer can neither be rewound nor re-flagged
+await deny("rewind progress on a completed transfer", db.from("assist_file_transfers")
+  .update({ progress: 0 }).eq("id", transfer?.id).select("id"));
+await deny("disable one-time access on a completed transfer", db.from("assist_file_transfers")
+  .update({ one_time_access: false, auto_delete: false }).eq("id", transfer?.id).select("id"));
+
+// privacy: critical protections stay on no matter which flag is targeted
+if (critical) {
+  await deny("mark a critical privacy control as non-critical", db.from("assist_privacy_controls")
+    .update({ is_critical: false, enabled: false }).eq("id", critical.id).select("id"));
+}
+
+// settings: locked settings resist relabelling as well as value changes
+if (locked) {
+  await deny("unlock a locked setting", db.from("assist_settings")
+    .update({ is_locked: false }).eq("id", locked.id).select("id"));
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
