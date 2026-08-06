@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test:smoke": "bun tests/assist-rls-smoke.mjs",
+    "test:smoke:stress": "bun tests/assist-rls-stress.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {
