@@ -147,8 +147,7 @@ export function AMFullSidebar({
     })).filter((g) => g.items.length > 0);
   }, [query]);
 
-  const groupOpen = (label: string, items: AMItem[]) =>
-    openGroups[label] ?? items.some((i) => i.id === activeSection);
+  const groupOpen = (label: string) => openGroups[label] ?? true;
 
   const ItemLink = ({ item }: { item: AMItem }) => {
     const active = activeSection === item.id;
@@ -258,7 +257,7 @@ export function AMFullSidebar({
         </div>
 
         {(filtered ?? GROUPS).map((group) => {
-          const open = filtered ? true : groupOpen(group.label, group.items);
+          const open = filtered ? true : groupOpen(group.label);
           if (collapsed) {
             return (
               <div key={group.label} className="space-y-0.5 border-t border-border/60 pt-2">
