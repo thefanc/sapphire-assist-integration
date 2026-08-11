@@ -140,19 +140,32 @@ export function ScreenHeader({
   tone?: "default" | "danger";
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1
-          className={cn(
-            "text-2xl font-semibold",
-            tone === "danger" ? "text-destructive" : "text-foreground",
-          )}
-        >
-          {title}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6",
+        tone === "danger" && "border-destructive/30",
+      )}
+    >
+      <div
+        className={cn(
+          "pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full blur-3xl",
+          tone === "danger" ? "bg-destructive/15" : "bg-primary/15",
+        )}
+      />
+      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="min-w-0">
+          <h1
+            className={cn(
+              "truncate text-xl font-bold tracking-tight sm:text-2xl",
+              tone === "danger" ? "text-destructive" : "text-foreground",
+            )}
+          >
+            {title}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
@@ -178,14 +191,16 @@ export function StatCard({
     info: "text-info bg-info/10 border-info/25",
   };
   return (
-    <Card className="overflow-hidden">
+    <Card className="group relative overflow-hidden transition-colors duration-200 hover:border-primary/35">
       <CardContent className="flex items-start justify-between gap-4 p-5">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tabular-nums">{value}</p>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight">{value}</p>
           {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
         </div>
-        <span className={cn("rounded-lg border p-2.5", tones[tone])}>
+        <span className={cn("shrink-0 rounded-xl border p-2.5", tones[tone])}>
           <Icon className="h-5 w-5" />
         </span>
       </CardContent>
