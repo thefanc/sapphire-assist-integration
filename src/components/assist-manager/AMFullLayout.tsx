@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { AMFullSidebar } from './AMFullSidebar';
+import { AMFullSidebar, useAMSidebarState } from './AMFullSidebar';
 import { AMProvider, useAM } from './am-context';
 import { useApprovals, useRequests, useSessions } from '@/lib/assist-manager/hooks';
 import { AMAssistDashboard } from './screens/AMAssistDashboard';
@@ -22,10 +22,11 @@ import { AMSessionLogs } from './screens/AMSessionLogs';
 import { AMAIAssistLayer } from './screens/AMAIAssistLayer';
 import { AMEmergencyStop } from './screens/AMEmergencyStop';
 import { AMSettings } from './screens/AMSettings';
-import { Activity, ShieldCheck } from 'lucide-react';
+import { Activity, Menu, ShieldCheck } from 'lucide-react';
 
 function AMShell() {
   const { section, setSection } = useAM();
+  const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useAMSidebarState();
   const { data: sessions = [] } = useSessions();
   const { data: requests = [] } = useRequests();
   const { data: approvals = [] } = useApprovals();
@@ -76,18 +77,36 @@ function AMShell() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <AMFullSidebar activeSection={section} onSectionChange={setSection} counts={counts} />
+      <AMFullSidebar
+        activeSection={section}
+        onSectionChange={setSection}
+        counts={counts}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span className="font-medium text-foreground">Software Vala</span>
-            <span className="text-border">/</span>
-            <span>Assist Manager</span>
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+          <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+            <span className="truncate font-semibold tracking-tight text-foreground">
+              Software Vala
+            </span>
+            <span className="hidden text-border sm:inline">/</span>
+            <span className="hidden truncate sm:inline">Assist Manager</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="ml-auto flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground">
             <Activity className="h-3.5 w-3.5 text-success" />
-            {activeCount} live session{activeCount === 1 ? '' : 's'}
+            <span className="tabular-nums text-foreground">{activeCount}</span> live session
+            {activeCount === 1 ? '' : 's'}
           </div>
         </header>
         <main className="min-h-0 flex-1 overflow-hidden">{renderContent()}</main>
