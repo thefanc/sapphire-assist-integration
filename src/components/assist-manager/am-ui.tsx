@@ -142,6 +142,7 @@ export function RiskPill({ risk }: { risk: RiskLevel | string }) {
 }
 
 export function ScreenHeader({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   title,
   subtitle,
   actions,
