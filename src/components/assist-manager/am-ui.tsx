@@ -146,40 +146,49 @@ export function ScreenHeader({
   subtitle,
   actions,
   tone = "default",
+  icon,
+  eyebrow,
 }: {
   title: string;
   subtitle: string;
   actions?: ReactNode;
   tone?: "default" | "danger";
+  icon?: React.ElementType;
+  eyebrow?: string;
 }) {
+  const { section } = useAM();
+  const Icon = icon ?? AM_SECTION_ICONS[section] ?? Shield;
   return (
-    <div
+    <section
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6",
-        tone === "danger" && "border-destructive/30",
+        "hero-surface enter-soft relative overflow-hidden p-5 sm:p-7 lg:p-8",
+        tone === "danger" && "hero-surface--danger",
       )}
     >
-      <div
-        className={cn(
-          "pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full blur-3xl",
-          tone === "danger" ? "bg-destructive/15" : "bg-primary/15",
-        )}
-      />
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-accent-pink/30 blur-3xl" />
+      <div className="relative grid grid-cols-[minmax(0,1fr)] items-end gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
-          <h1
-            className={cn(
-              "truncate text-xl font-bold tracking-tight sm:text-2xl",
-              tone === "danger" ? "text-destructive" : "text-foreground",
-            )}
-          >
+          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[11px] font-medium backdrop-blur">
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{eyebrow ?? "Assist Manager"}</span>
+          </div>
+          <h1 className="mt-4 truncate text-2xl font-semibold tracking-tight sm:text-3xl lg:text-[34px]">
             {title}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          <p className="mt-1.5 max-w-2xl text-sm text-primary-foreground/80 sm:text-[15px]">
+            {subtitle}
+          </p>
+          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-medium">
+            <Sparkles className="h-3 w-3" />
+            Live backend · VALA Connect
+          </span>
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-2 lg:justify-self-end">{actions}</div>
+        ) : null}
       </div>
-    </div>
+    </section>
   );
 }
 
