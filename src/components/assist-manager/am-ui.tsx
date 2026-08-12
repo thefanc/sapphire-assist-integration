@@ -141,24 +141,6 @@ export function RiskPill({ risk }: { risk: RiskLevel | string }) {
   );
 }
 
-export function ScreenHeader({
-  title,
-  subtitle,
-  actions,
-  tone = "default",
-  icon,
-  eyebrow,
-}: {
-  title: string;
-  subtitle: string;
-  actions?: ReactNode;
-  tone?: "default" | "danger";
-  icon?: React.ElementType;
-  eyebrow?: string;
-}) {
-  return <ScreenHeaderInner {...{ title, subtitle, actions, tone, icon, eyebrow }} />;
-}
-
 export const AM_SECTION_ICONS: Record<string, React.ElementType> = {
   assist_dashboard: LayoutDashboard,
   active_sessions: MonitorPlay,
@@ -177,7 +159,7 @@ export const AM_SECTION_ICONS: Record<string, React.ElementType> = {
   settings: SettingsIcon,
 };
 
-function ScreenHeaderInner({
+export function ScreenHeader({
   title,
   subtitle,
   actions,
