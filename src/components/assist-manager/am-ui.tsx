@@ -156,6 +156,42 @@ export function ScreenHeader({
   icon?: React.ElementType;
   eyebrow?: string;
 }) {
+  return <ScreenHeaderInner {...{ title, subtitle, actions, tone, icon, eyebrow }} />;
+}
+
+export const AM_SECTION_ICONS: Record<string, React.ElementType> = {
+  assist_dashboard: LayoutDashboard,
+  active_sessions: MonitorPlay,
+  create_assist: PlusCircle,
+  session_requests: Inbox,
+  pending_approval: Clock,
+  live_assist: Radio,
+  screen_control: Monitor,
+  file_transfer: FileUp,
+  chat_voice: MessageSquare,
+  privacy_controls: Shield,
+  device_access: Laptop,
+  session_logs: FileText,
+  ai_assist_layer: Brain,
+  emergency_stop: AlertOctagon,
+  settings: SettingsIcon,
+};
+
+function ScreenHeaderInner({
+  title,
+  subtitle,
+  actions,
+  tone = "default",
+  icon,
+  eyebrow,
+}: {
+  title: string;
+  subtitle: string;
+  actions?: ReactNode;
+  tone?: "default" | "danger";
+  icon?: React.ElementType;
+  eyebrow?: string;
+}) {
   const { section } = useAM();
   const Icon = icon ?? AM_SECTION_ICONS[section] ?? Shield;
   return (
