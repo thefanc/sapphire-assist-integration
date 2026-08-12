@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  AlertOctagon,
   AppWindow,
   Bell,
   Brain,
@@ -8,12 +9,23 @@ import {
   Clock,
   Eye,
   EyeOff,
+  FileText,
+  FileUp,
   FileX,
   Globe,
+  Laptop,
+  LayoutDashboard,
   Layers,
   Lock,
+  MessageSquare,
+  Monitor,
+  MonitorPlay,
+  PlusCircle,
+  Inbox,
+  Radio,
   Settings as SettingsIcon,
   Shield,
+  Sparkles,
   Video,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +33,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { AccessMode, RiskLevel, SessionStatus } from "@/lib/assist-manager/types";
+import { useAM } from "./am-context";
 
 export function formatBytes(bytes: number) {
   if (!bytes) return "0 B";
