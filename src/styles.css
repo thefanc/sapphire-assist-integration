@@ -189,6 +189,16 @@
   box-shadow: var(--shadow-hero);
 }
 
+@utility hero-surface--danger {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-destructive) 0%,
+    color-mix(in oklab, var(--color-destructive) 55%, var(--color-accent-amber)) 100%
+  );
+  color: var(--color-destructive-foreground);
+  box-shadow: 0 30px 80px -30px color-mix(in oklab, var(--color-destructive) 55%, transparent);
+}
+
 /* ─────────────── Premium button system ─────────────── */
 @utility btn-premium {
   isolation: isolate;
