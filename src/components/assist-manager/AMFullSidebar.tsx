@@ -160,8 +160,11 @@ export function AMFullSidebar({
           onCloseMobile?.();
         }}
         title={item.label}
+        aria-current={active ? 'page' : undefined}
+        aria-label={count ? `${item.label}, ${count} pending` : item.label}
         className={cn(
           'group/item relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           collapsed && 'justify-center px-0',
           active
             ? 'bg-primary/18 font-medium text-foreground'
@@ -173,7 +176,7 @@ export function AMFullSidebar({
         {active && (
           <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-primary" />
         )}
-        <item.icon className="h-4 w-4 shrink-0" />
+        <item.icon aria-hidden="true" className="h-4 w-4 shrink-0" />
         {!collapsed && <span className="flex-1 truncate text-left">{item.label}</span>}
         {!collapsed && count ? (
           <span
@@ -241,13 +244,14 @@ export function AMFullSidebar({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Find a screen…"
+              aria-label="Search Assist Manager screens"
               className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
             />
           </div>
         </div>
       )}
 
-      <nav className="flex-1 space-y-3 overflow-y-auto px-2 py-3">
+      <nav aria-label="Assist Manager sections" className="flex-1 space-y-3 overflow-y-auto px-2 py-3">
         <div className="space-y-0.5">
           {PRIMARY_ITEMS.filter(
             (i) => !query.trim() || i.label.toLowerCase().includes(query.trim().toLowerCase()),
@@ -271,10 +275,12 @@ export function AMFullSidebar({
             <div key={group.label}>
               <button
                 onClick={() => setOpenGroups((s) => ({ ...s, [group.label]: !open }))}
-                className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+                aria-expanded={open}
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {group.label}
                 <ChevronDown
+                  aria-hidden="true"
                   className={cn('h-3.5 w-3.5 transition-transform duration-200', open && 'rotate-180')}
                 />
               </button>

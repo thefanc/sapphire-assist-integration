@@ -476,3 +476,10 @@
   font-size: 0.75rem;
   letter-spacing: 0.02em;
 }
+
+/* ─────────────── Banner accessibility ─────────────── */
+.am-banner :is(a, button, [role="button"], input, select):focus-visible {
+  outline: 2px solid var(--color-primary-foreground);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
