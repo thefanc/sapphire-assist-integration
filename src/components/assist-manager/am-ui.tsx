@@ -176,29 +176,42 @@ export function ScreenHeader({
 }) {
   const { section } = useAM();
   const Icon = icon ?? AM_SECTION_ICONS[section] ?? Shield;
+  const headingId = useId();
   return (
     <section
+      data-am-banner
+      data-banner-tone={tone}
+      aria-labelledby={headingId}
       className={cn(
-        "hero-surface enter-soft relative overflow-hidden p-5 sm:p-7 lg:p-8",
+        "am-banner hero-surface enter-soft relative overflow-hidden p-5 sm:p-7 lg:p-8",
         tone === "danger" && "hero-surface--danger",
       )}
     >
-      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-accent-pink/30 blur-3xl" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-accent-pink/30 blur-3xl"
+      />
       <div className="relative grid grid-cols-[minmax(0,1fr)] items-end gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
-          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[11px] font-medium backdrop-blur">
-            <Icon className="h-3.5 w-3.5 shrink-0" />
+          <p className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/40 bg-white/20 px-3 py-1 text-[11px] font-medium backdrop-blur">
+            <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{eyebrow ?? "Assist Manager"}</span>
-          </div>
-          <h1 className="mt-4 truncate text-2xl font-semibold tracking-tight sm:text-3xl lg:text-[34px]">
+          </p>
+          <h1
+            id={headingId}
+            className="mt-4 truncate text-2xl font-semibold tracking-tight sm:text-3xl lg:text-[34px]"
+          >
             {title}
           </h1>
-          <p className="mt-1.5 max-w-2xl text-sm text-primary-foreground/80 sm:text-[15px]">
+          <p className="mt-1.5 max-w-2xl text-sm text-primary-foreground/95 sm:text-[15px]">
             {subtitle}
           </p>
-          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-medium">
-            <Sparkles className="h-3 w-3" />
+          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-white/15 px-3 py-1.5 text-[11px] font-medium">
+            <Sparkles aria-hidden="true" className="h-3 w-3" />
             Live backend · VALA Connect
           </span>
         </div>
@@ -209,6 +222,7 @@ export function ScreenHeader({
     </section>
   );
 }
+
 
 export function StatCard({
   label,
