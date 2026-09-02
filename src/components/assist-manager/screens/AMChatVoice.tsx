@@ -37,7 +37,7 @@ export function AMChatVoice() {
   if (!session) {
     return (
 <div className="space-y-6 p-6">
-        <ScreenHeader title="Chat &amp; Voice" subtitle="Secure messaging and voice channel with the end user" />
+        <ScreenHeader title="Chat & Voice" subtitle="Secure messaging and voice channel with the end user" />
         <EmptyState title="No session selected" description="Chat opens with a live session." />
       </div>
     );
