@@ -58,7 +58,8 @@ export function AMLiveAssist() {
 
   if (!session) {
     return (
-      <div className="p-6">
+<div className="space-y-6 p-6">
+        <ScreenHeader title="Live Assist" subtitle="Real-time assist stream and session controls" />
         <EmptyState
           title="No live session"
           description="Approve a pending session to start assisting."

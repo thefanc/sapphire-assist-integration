@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test:smoke": "bun tests/assist-rls-smoke.mjs",
     "test:smoke:stress": "bun tests/assist-rls-stress.mjs",
+    "test:banners": "python3 tests/banner_routes_test.py",
     "format": "prettier --write ."
   },
   "dependencies": {

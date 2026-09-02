@@ -50,7 +50,8 @@ export function AMScreenControl() {
 
   if (!session) {
     return (
-      <div className="p-6">
+<div className="space-y-6 p-6">
+        <ScreenHeader title="Screen Control" subtitle="Remote control permissions and access modes" />
         <EmptyState
           title="No session to control"
           description="Screen control activates once a session is live."
