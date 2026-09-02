@@ -49,6 +49,7 @@ export function AMEmergencyStop() {
         <ScreenHeader
           title="Emergency Stop"
           subtitle="Instant kill switch for any assist session"
+          tone="danger"
           actions={
             <Badge variant="destructive" className="gap-1">
               <ShieldAlert className="h-4 w-4" />
