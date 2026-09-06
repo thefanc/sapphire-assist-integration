@@ -1,0 +1,1 @@
+ALTER TABLE public.assist_settings ADD COLUMN IF NOT EXISTS options text[];
