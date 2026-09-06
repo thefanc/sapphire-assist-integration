@@ -46,8 +46,12 @@ const MODES: {
     description: "Temporarily freeze screen view",
     icon: Pause,
   },
-  { key: "resume", label: "Resume", description: "Continue the paused session", icon: Play },
-  { key: "freeze", label: "Freeze Screen", description: "Lock current screen state", icon: Snowflake },
+  {
+    key: "freeze",
+    label: "Freeze Screen",
+    description: "Lock current screen state",
+    icon: Snowflake,
+  },
 ];
 
 export function AMScreenControl() {
