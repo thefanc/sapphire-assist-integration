@@ -21,7 +21,17 @@ import { useSettings, useUpdateSetting } from "@/lib/assist-manager/hooks";
 import type { SettingRow } from "@/lib/assist-manager/types";
 import { LoadingBlock, ScreenHeader, sectionIcon } from "../am-ui";
 
-const DURATION_OPTIONS = ["15", "30", "45", "60", "90", "120"];
+const OPTION_LABELS: Record<string, string> = {
+  auto: "Auto-approve",
+  manager: "Manager approval",
+  dual: "Dual approval",
+  boss_owner: "Boss Owner approval",
+};
+
+function optionLabel(value: string) {
+  if (OPTION_LABELS[value]) return OPTION_LABELS[value];
+  return /^\d+$/.test(value) ? `${value} min` : value;
+}
 
 export function AMSettings() {
   const { data: settings = [], isLoading } = useSettings();
