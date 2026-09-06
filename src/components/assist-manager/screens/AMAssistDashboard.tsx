@@ -197,7 +197,9 @@ export function AMAssistDashboard({ onNavigate }: AMAssistDashboardProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {agents.length === 0 ? (
+            {agentsLoading ? (
+              <LoadingBlock rows={2} />
+            ) : agents.length === 0 ? (
               <EmptyState title="No agents" description="No assist agents are registered." />
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
