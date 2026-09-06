@@ -170,6 +170,7 @@ export interface SettingRow {
   label: string;
   control_type: "toggle" | "number" | "select";
   value: string;
+  options: string[] | null;
   sort_order: number;
   is_locked: boolean;
 }

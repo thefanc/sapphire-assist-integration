@@ -21,7 +21,17 @@ import { useSettings, useUpdateSetting } from "@/lib/assist-manager/hooks";
 import type { SettingRow } from "@/lib/assist-manager/types";
 import { LoadingBlock, ScreenHeader, sectionIcon } from "../am-ui";
 
-const DURATION_OPTIONS = ["15", "30", "45", "60", "90", "120"];
+const OPTION_LABELS: Record<string, string> = {
+  auto: "Auto-approve",
+  manager: "Manager approval",
+  dual: "Dual approval",
+  boss_owner: "Boss Owner approval",
+};
+
+function optionLabel(value: string) {
+  if (OPTION_LABELS[value]) return OPTION_LABELS[value];
+  return /^\d+$/.test(value) ? `${value} min` : value;
+}
 
 export function AMSettings() {
   const { data: settings = [], isLoading } = useSettings();
@@ -106,13 +116,13 @@ export function AMSettings() {
                             disabled={row.is_locked || updateSetting.isPending}
                             onValueChange={(value) => updateSetting.mutate({ id: row.id, value })}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-44">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {DURATION_OPTIONS.map((opt) => (
+                              {(row.options ?? []).map((opt) => (
                                 <SelectItem key={opt} value={opt}>
-                                  {opt} min
+                                  {optionLabel(opt)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
