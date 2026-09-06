@@ -10,6 +10,7 @@ import {
   MousePointer2,
   Keyboard,
   Pause,
+  Play,
   Snowflake,
   Eye,
 } from "lucide-react";
