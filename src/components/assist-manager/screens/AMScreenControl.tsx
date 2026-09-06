@@ -123,9 +123,88 @@ export function AMScreenControl() {
                 >
                   <Icon className={cn("mx-auto mb-2 h-6 w-6", active && "text-primary")} />
                   <p className="text-sm font-medium">{mode.label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{mode.description}</p>
                 </button>
               );
             })}
+            <button
+              type="button"
+              disabled={!control?.is_paused || updateControl.isPending}
+              onClick={() =>
+                updateControl.mutate({
+                  sessionId: session.id,
+                  patch: { control_mode: "view", is_paused: false },
+                })
+              }
+              className={cn(
+                "rounded-lg border p-4 text-center transition-colors",
+                control?.is_paused
+                  ? "border-success/50 hover:border-success"
+                  : "border-border opacity-60",
+              )}
+            >
+              <Play
+                className={cn("mx-auto mb-2 h-6 w-6", control?.is_paused && "text-success")}
+              />
+              <p className="text-sm font-medium">Resume</p>
+              <p className="mt-1 text-xs text-muted-foreground">Continue the paused session</p>
+            </button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Active Restrictions</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div
+              className={cn(
+                "rounded-lg border p-3",
+                control?.window_specific
+                  ? "border-success/30 bg-success/10"
+                  : "border-warning/30 bg-warning/10",
+              )}
+            >
+              <p
+                className={cn(
+                  "text-sm font-medium",
+                  control?.window_specific ? "text-success" : "text-warning",
+                )}
+              >
+                {control?.window_specific ? "NO FULL SYSTEM ACCESS" : "FULL DESKTOP VISIBLE"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {control?.window_specific
+                  ? "Window-specific access only"
+                  : "Enable window-specific access to restrict the view"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+              <p className="text-sm font-medium text-warning">LATENCY OPTIMIZATION</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Streaming at {session.latency_ms} ms · {session.frame_rate} fps
+              </p>
+            </div>
+            <div
+              className={cn(
+                "rounded-lg border p-3",
+                control?.resolution_lock
+                  ? "border-info/30 bg-info/10"
+                  : "border-border bg-muted/40",
+              )}
+            >
+              <p
+                className={cn(
+                  "text-sm font-medium",
+                  control?.resolution_lock ? "text-info" : "text-muted-foreground",
+                )}
+              >
+                {control?.resolution_lock ? "RESOLUTION LOCKED" : "RESOLUTION UNLOCKED"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Target display {session.resolution}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
