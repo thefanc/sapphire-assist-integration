@@ -116,13 +116,13 @@ export function AMSettings() {
                             disabled={row.is_locked || updateSetting.isPending}
                             onValueChange={(value) => updateSetting.mutate({ id: row.id, value })}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-44">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {DURATION_OPTIONS.map((opt) => (
+                              {(row.options ?? []).map((opt) => (
                                 <SelectItem key={opt} value={opt}>
-                                  {opt} min
+                                  {optionLabel(opt)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
