@@ -40,7 +40,7 @@ export function AMAssistDashboard({ onNavigate }: AMAssistDashboardProps) {
   const { data: sessions = [], isLoading } = useSessions();
   const { data: requests = [] } = useRequests();
   const { data: approvals = [] } = useApprovals();
-  const { data: agents = [] } = useAgents();
+  const { data: agents = [], isLoading: agentsLoading } = useAgents();
 
   const cards = [
     {
