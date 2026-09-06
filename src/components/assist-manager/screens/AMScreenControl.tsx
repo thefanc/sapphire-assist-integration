@@ -27,11 +27,27 @@ import type { ControlMode } from "@/lib/assist-manager/types";
 import { CodeChip, EmptyState, LoadingBlock, ScreenHeader, iconFor } from "../am-ui";
 import { SessionPicker, useActiveSession } from "../am-session";
 
-const MODES: { key: ControlMode; label: string; icon: React.ElementType }[] = [
-  { key: "view", label: "View Only", icon: Eye },
-  { key: "control", label: "Take Control", icon: Hand },
-  { key: "pause", label: "Pause Control", icon: Pause },
-  { key: "freeze", label: "Freeze Screen", icon: Snowflake },
+const MODES: {
+  key: ControlMode;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+}[] = [
+  { key: "view", label: "View Only", description: "Watch screen without any control", icon: Eye },
+  {
+    key: "control",
+    label: "Take Control",
+    description: "Mouse and keyboard control, within limits",
+    icon: Hand,
+  },
+  {
+    key: "pause",
+    label: "Pause Control",
+    description: "Temporarily freeze screen view",
+    icon: Pause,
+  },
+  { key: "resume", label: "Resume", description: "Continue the paused session", icon: Play },
+  { key: "freeze", label: "Freeze Screen", description: "Lock current screen state", icon: Snowflake },
 ];
 
 export function AMScreenControl() {
